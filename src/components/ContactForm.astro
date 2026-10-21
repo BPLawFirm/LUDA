@@ -1,0 +1,223 @@
+---
+import { ArrowUpRight } from '@lucide/astro';
+import { localPath, type Locale } from '../lib/site';
+
+const TURNSTILE_SITE_KEY = "0x4AAAAAAFew2c0_IMrmVA_B";
+
+const { locale } = Astro.props as {
+  locale: Locale;
+};
+---
+
+<div class="contact-form-card">
+  <div class="contact-form-heading">
+    <h2>{locale === 'en' ? 'Send us a message.' : 'Napíšte nám.'}</h2>
+    <p>{locale === 'en' ? 'All fields are required.' : 'Všetky polia sú povinné.'}</p>
+  </div>
+  <form
+    method="post"
+    action="/api/contact"
+    class="contact-form"
+    aria-label={locale === 'en' ? 'Contact form' : 'Kontaktný formulár'}
+  >
+    <div class="contact-field-row">
+      <div class="contact-field">
+        <label for="name">{locale === 'en' ? 'Your name' : 'Vaše meno'}</label>
+        <input type="text" id="name" name="name" autocomplete="name" maxlength="100" placeholder={locale === 'en' ? 'Full name' : 'Meno a priezvisko'} required>
+      </div>
+
+      <div class="contact-field">
+        <label for="email">{locale === 'en' ? 'Email address' : 'E-mailová adresa'}</label>
+        <input type="email" id="email" name="email" autocomplete="email" maxlength="254" placeholder={locale === 'en' ? 'you@company.com' : 'vy@firma.sk'} required>
+      </div>
+    </div>
+
+    <div class="contact-field">
+      <label for="message">{locale === 'en' ? 'How can we help?' : 'S čím vám môžeme pomôcť?'}</label>
+      <textarea id="message" name="message" rows="4" maxlength="5000" placeholder={locale === 'en' ? 'Tell us a little about your project and what you would like to improve.' : 'Predstavte nám svoj projekt a napíšte, čo by ste chceli zlepšiť.'} required></textarea>
+    </div>
+
+    <div class="contact-form-footer">
+      <div class="contact-challenge">
+        <div
+          class="cf-turnstile"
+          data-sitekey={TURNSTILE_SITE_KEY}
+          data-action="contact"
+          data-size="flexible"
+          data-theme="light"
+          data-language={locale}
+        ></div>
+      </div>
+
+      <button type="submit" class="button contact-submit">
+        <span>{locale === 'en' ? 'Send message' : 'Odoslať správu'}</span>
+        <ArrowUpRight size={20} stroke-width={1.5} aria-hidden="true" />
+      </button>
+      <p class="contact-privacy">
+        <a href={localPath(locale, 'privacy')}>{locale === 'en' ? 'Privacy policy' : 'Ochrana súkromia'}</a>
+      </p>
+    </div>
+  </form>
+</div>
+
+<script
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+  async
+  defer
+  is:inline
+></script>
+
+<style>
+  .contact-form-card {
+    container-type: inline-size;
+    width: 100%;
+    min-width: 0;
+    padding: clamp(24px, 3.2vw, 40px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+    box-shadow: 0 12px 40px rgba(6, 41, 86, .045);
+  }
+
+  .contact-form-heading { margin-bottom: 28px; }
+
+  .contact-form-heading h2 {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: -.025em;
+    line-height: 1.15;
+  }
+
+  .contact-form-heading p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.5;
+  }
+
+  .contact-form {
+    display: grid;
+    gap: 22px;
+    margin: 0;
+  }
+
+  .contact-field-row { display: grid; gap: 22px; }
+
+  @container (min-width: 440px) {
+    .contact-field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  }
+
+  .contact-field {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .contact-field label {
+    color: var(--ink);
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  .contact-field input,
+  .contact-field textarea {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #b9cbdc;
+    border-radius: 8px;
+    padding: 13px 15px;
+    background: var(--ice);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+
+  .contact-field input { min-height: 52px; }
+
+  .contact-field textarea {
+    min-height: 144px;
+    resize: vertical;
+  }
+
+  .contact-field input::placeholder,
+  .contact-field textarea::placeholder { color: #6b7c90; opacity: 1; }
+
+  .contact-field input:hover,
+  .contact-field textarea:hover { border-color: #aebfd1; }
+
+  .contact-field input:focus,
+  .contact-field textarea:focus {
+    border-color: var(--blue);
+    background: var(--paper);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(13, 92, 175, .12);
+  }
+
+  .contact-field input:user-invalid,
+  .contact-field textarea:user-invalid {
+    border-color: #a63737;
+    box-shadow: 0 0 0 3px rgba(166, 55, 55, .1);
+  }
+
+  .contact-form-footer {
+    display: grid;
+    gap: 20px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  .contact-challenge {
+    min-width: 0;
+    /* Let Turnstile use the card's gutter when its 300px minimum needs it. */
+    margin-inline: min(0px, calc((100% - 300px) / 2));
+    overflow-x: auto;
+  }
+
+  .contact-submit {
+    width: 100%;
+    min-height: 54px;
+    justify-content: space-between;
+    gap: 16px;
+    padding-inline: 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .contact-submit :global(svg) {
+    flex: none;
+    transition: transform .18s ease;
+  }
+
+  .contact-submit:hover { transform: none; }
+  .contact-submit:hover :global(svg) { transform: translate(2px, -2px); }
+  .contact-submit:active { background: var(--ink-deep); box-shadow: none; }
+
+  .contact-privacy { margin: -6px 0 0; text-align: center; font-size: .76rem; line-height: 1.5; }
+  .contact-privacy a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  .contact-privacy a:hover { color: var(--ink); }
+
+  @media (max-width: 480px) {
+    .contact-form-card { padding: 26px 18px; }
+    .contact-form, .contact-field-row { gap: 20px; }
+    .contact-form-heading { margin-bottom: 24px; }
+  }
+
+  @media (max-width: 380px) {
+    .contact-form-card { padding-inline: 12px; }
+  }
+
+  @media (max-width: 359px) {
+    .contact-form-card { padding-inline: 0; border: 0; background: transparent; box-shadow: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .contact-submit:hover :global(svg) { transform: none; }
+  }
+</style>

@@ -40,6 +40,24 @@ Keep matching EN/SK articles connected with the same `translationKey`.
 - Also connect `www.ludasolutions.ai`, `ludasolutions.eu`, and
   `www.ludasolutions.eu`
 
+The contact form is protected by Cloudflare Turnstile. In the Cloudflare Pages
+project settings, add `TURNSTILE_SECRET` as a secret and `TURNSTILE_HOSTNAMES`
+as a comma-separated variable containing only the hostnames configured on the
+widget for that deployment. Production values must not include `localhost` or
+`127.0.0.1`. The expected action is `contact`.
+
+For local Pages Function development, create an ignored `.dev.vars` file in the
+repository root with the widget secret and local hostnames:
+
+```dotenv
+TURNSTILE_SECRET=your-widget-secret
+TURNSTILE_HOSTNAMES=localhost,127.0.0.1
+```
+
+Do not commit the real secret. Run Pages Functions through Wrangler (for
+example, `npx wrangler pages dev dist`) because `npm run dev` serves Astro
+without the `/api/contact` Pages Function.
+
 Create Cloudflare Redirect Rules for the secondary domain:
 
 1. If hostname is `ludasolutions.eu` or `www.ludasolutions.eu`

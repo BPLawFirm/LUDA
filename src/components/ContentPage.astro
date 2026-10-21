@@ -1,7 +1,8 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { labels, site, type Locale } from '../lib/site';
+import { site, type Locale } from '../lib/site';
+import ContactForm from './ContactForm.astro';
 
 const { locale, page, alternatePath } = Astro.props as {
   locale: Locale;
@@ -9,11 +10,10 @@ const { locale, page, alternatePath } = Astro.props as {
   alternatePath: string;
 };
 const isContact = page.data.translationKey === 'contact';
-const t = labels[locale];
 ---
 
 <BaseLayout locale={locale} title={page.data.seo.title} description={page.data.seo.description} alternatePath={alternatePath}>
-  <header class="page-hero">
+  <header class:list={['page-hero', { 'contact-hero': isContact }]}>
     <div class="container">
       <h1 class="display title-lg">{page.data.title}</h1>
       <p class="lede">{page.data.intro}</p>
@@ -27,21 +27,93 @@ const t = labels[locale];
       </div>
     </div>
   </section>}
-  {isContact && <section class="contact-section">
+  {isContact && <section class="contact-section" aria-label={locale === 'en' ? 'Contact details and form' : 'Kontaktné údaje a formulár'}>
     <div class="container contact-panel">
-      <div>
-        <p>{locale === 'en' ? 'Email us directly' : 'Napíšte nám priamo'}</p>
-        <a href={`mailto:${site.email}`}>{site.email}</a>
-      </div>
-      <a class="button" href={`mailto:${site.email}?subject=${encodeURIComponent(t.discuss)}`}>{t.discuss}</a>
+      <aside class="contact-details">
+        <p class="contact-eyebrow">{locale === 'en' ? 'Prefer email?' : 'Uprednostňujete e-mail?'}</p>
+        <h2>{locale === 'en' ? 'Let’s talk directly.' : 'Ozvite sa nám priamo.'}</h2>
+        <p class="contact-description">
+          {locale === 'en'
+            ? 'Send us a note directly, or tell us about your project using the form.'
+            : 'Napíšte nám priamo alebo nám predstavte svoj projekt vo formulári.'}
+        </p>
+        <a class="contact-email" href={`mailto:${site.email}`}>
+          {site.email}<span aria-hidden="true">↗</span>
+        </a>
+      </aside>
+      <ContactForm {locale} />
     </div>
   </section>}
 </BaseLayout>
 
 <style>
+  .contact-hero { padding-bottom: clamp(48px, 6vw, 80px); }
   .contact-section { padding: 0 0 var(--section); }
-  .contact-panel { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 38px 44px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ice); }
-  .contact-panel p { margin: 0 0 4px; color: var(--muted); font-size: .82rem; }
-  .contact-panel div > a { color: var(--ink); font-family: var(--display); font-size: clamp(1.8rem, 4vw, 3.6rem); }
-  @media (max-width: 650px) { .contact-panel { align-items: flex-start; flex-direction: column; padding: 28px 24px; } }
+
+  .contact-panel {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+    align-items: start;
+    gap: clamp(36px, 6vw, 80px);
+    padding-top: clamp(32px, 4vw, 48px);
+    border-top: 1px solid var(--line);
+  }
+
+  .contact-details { max-width: 390px; padding-top: 12px; }
+
+  .contact-eyebrow {
+    margin: 0 0 18px;
+    color: var(--blue);
+    font-size: .76rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .contact-details h2 {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    font-weight: 400;
+    letter-spacing: -.035em;
+    line-height: 1;
+  }
+
+  .contact-description {
+    max-width: 34ch;
+    margin: 20px 0 28px;
+    color: var(--muted);
+  }
+
+  .contact-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: #9bb4ce;
+    text-underline-offset: 5px;
+  }
+
+  .contact-email span { color: var(--blue); font-size: 1.15em; }
+  .contact-email:hover { text-decoration-color: currentColor; }
+
+  @media (max-width: 900px) {
+    .contact-panel {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+    }
+
+    .contact-details { max-width: 560px; padding-top: 0; }
+    .contact-details h2 { max-width: 14ch; font-size: clamp(2.4rem, 7vw, 3.5rem); }
+    .contact-description { margin: 16px 0 20px; }
+  }
+
+  @media (max-width: 480px) {
+    .contact-panel { gap: 32px; }
+    .contact-details h2 { font-size: clamp(2.15rem, 10vw, 2.8rem); }
+  }
 </style>
