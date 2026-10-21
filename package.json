@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "test:contact": "node --test tests/contact.test.mjs"
   },
   "keywords": [],
   "author": "",

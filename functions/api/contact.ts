@@ -1,6 +1,10 @@
+import { isEmailAddress, parseContactSubmission } from "../../src/lib/contact.ts";
+
 interface Env {
   TURNSTILE_SECRET?: string;
   TURNSTILE_HOSTNAMES?: string;
+  CONTACT_TO?: string;
+  CONTACT_MAILER?: { fetch(request: Request): Promise<Response> };
 }
 
 interface SiteverifyResult {
@@ -91,25 +95,13 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     return Response.json({ error: "Invalid form data" }, { status: 400 });
   }
 
-  const read = (key: string) => {
-    const value = data.get(key);
-    return typeof value === "string" ? value.trim() : "";
-  };
-
-  const name = read("name");
-  const email = read("email");
-  const message = read("message");
-
-  if (!name || !email || !message) {
-    return Response.json({ error: "All fields are required" }, { status: 400 });
-  }
-
-  if (name.length > 100 || email.length > 254 || message.length > 5000) {
-    return Response.json({ error: "Field is too long" }, { status: 400 });
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ error: "Invalid email" }, { status: 400 });
+  const parsed = parseContactSubmission({
+    name: data.get("name"),
+    email: data.get("email"),
+    message: data.get("message"),
+  });
+  if ("error" in parsed) {
+    return Response.json({ error: parsed.error }, { status: 400 });
   }
 
   const verification = await verifyTurnstile(request, data, env);
@@ -123,5 +115,24 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     );
   }
 
-  return Response.json({ message: "Form validated. Email not sent yet." });
+  const recipient = env.CONTACT_TO?.trim();
+  if (!isEmailAddress(recipient) || !env.CONTACT_MAILER) {
+    return Response.json({ error: "Message delivery is unavailable" }, { status: 503 });
+  }
+
+  try {
+    const response = await env.CONTACT_MAILER.fetch(new Request("https://contact-mailer.internal/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...parsed.submission, to: recipient }),
+    }));
+    const result = response.ok ? await response.json() as { accepted?: unknown } : null;
+    if (!response.ok || result?.accepted !== true) {
+      return Response.json({ error: "Message delivery is unavailable" }, { status: 503 });
+    }
+  } catch {
+    return Response.json({ error: "Message delivery is unavailable" }, { status: 503 });
+  }
+
+  return Response.json({ message: "Message accepted for delivery." });
 }

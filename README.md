@@ -58,6 +58,49 @@ Do not commit the real secret. Run Pages Functions through Wrangler (for
 example, `npx wrangler pages dev dist`) because `npm run dev` serves Astro
 without the `/api/contact` Pages Function.
 
+### Contact email delivery
+
+`functions/api/contact.ts` validates the form and Turnstile, then calls the
+private `luda-contact-mailer` Worker via a `CONTACT_MAILER` service binding.
+The Worker has no public URL or routes. Its source and deployment configuration
+are in `workers/contact-mailer/`.
+
+In both Pages projects (`luda` and `ludaeu`), configure each environment:
+
+- `CONTACT_TO`: one email address, set in Settings > Variables and Secrets.
+  The recipient is read on the server and cannot be overridden by form fields.
+- `CONTACT_MAILER`: service binding to `luda-contact-mailer`, production.
+- Keep the existing `TURNSTILE_SECRET` and `TURNSTILE_HOSTNAMES` settings.
+
+The mailer's `EMAIL` binding uses Cloudflare's native email service. Its default
+binding permits verified destination addresses only. Verify the desired
+recipient in Cloudflare Email Routing > Destination Addresses before use.
+Changing recipients requires updating `CONTACT_TO` and redeploying Pages;
+changing application source is unnecessary. Configure Preview independently
+and use a test recipient there.
+
+The mailer's `CONTACT_FROM` variable defaults to `forms@ludasolutions.ai` in its
+Wrangler configuration. Visitor email is used only as `Reply-To`, never as the
+sender. No auto-reply is sent to visitors. DNS/MX changes are not part of the
+mailer deployment.
+
+Deploy the private Worker before redeploying the Pages projects:
+
+```sh
+npx wrangler deploy --config workers/contact-mailer/wrangler.jsonc
+```
+
+For local development, start the mailer with `wrangler dev` using the same config
+and start Pages with `npx wrangler pages dev dist --service CONTACT_MAILER=luda-contact-mailer`.
+Set a verified test `CONTACT_TO` in your ignored `.dev.vars` file. A local email
+binding simulates sending unless configured to use a remote resource.
+
+Run `npm run test:contact` on Node 22.18+ or 24+ to check the Pages-to-mailer
+contract with a simulated provider. These tests do not establish live delivery.
+Successful API responses mean the mail service acknowledged the submission;
+inbox/spam placement must be checked separately. Failed delivery returns 503,
+and the browser preserves the message and resets Turnstile for a retry.
+
 Create Cloudflare Redirect Rules for the secondary domain:
 
 1. If hostname is `ludasolutions.eu` or `www.ludasolutions.eu`

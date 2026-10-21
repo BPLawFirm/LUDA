@@ -18,6 +18,7 @@ const { locale } = Astro.props as {
     method="post"
     action="/api/contact"
     class="contact-form"
+    data-locale={locale}
     aria-label={locale === 'en' ? 'Contact form' : 'Kontaktný formulár'}
   >
     <div class="contact-field-row">
@@ -53,6 +54,7 @@ const { locale } = Astro.props as {
         <span>{locale === 'en' ? 'Send message' : 'Odoslať správu'}</span>
         <ArrowUpRight size={20} stroke-width={1.5} aria-hidden="true" />
       </button>
+      <p class="contact-status" role="status" aria-live="polite" hidden></p>
       <p class="contact-privacy">
         <a href={localPath(locale, 'privacy')}>{locale === 'en' ? 'Privacy policy' : 'Ochrana súkromia'}</a>
       </p>
@@ -66,6 +68,57 @@ const { locale } = Astro.props as {
   defer
   is:inline
 ></script>
+
+<script>
+  const copy = {
+    en: {
+      sending: 'Sending...',
+      sent: 'Your message has been submitted. Thank you.',
+      verification: 'Please complete the verification and try again.',
+      failed: 'We could not send your message. Please try again or email us directly.',
+    },
+    sk: {
+      sending: 'Odosielame...',
+      sent: 'Vaša správa bola odoslaná. Ďakujeme.',
+      verification: 'Dokončite overenie a skúste to znova.',
+      failed: 'Správu sa nepodarilo odoslať. Skúste to znova alebo nám napíšte e-mail.',
+    },
+  };
+
+  document.querySelectorAll<HTMLFormElement>('.contact-form').forEach((form) => {
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const status = form.querySelector<HTMLParagraphElement>('.contact-status');
+    if (!button || !status) return;
+    const t = copy[form.dataset.locale === 'sk' ? 'sk' : 'en'];
+    let submitting = false;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (submitting) return;
+      submitting = true;
+      button.disabled = true;
+      form.setAttribute('aria-busy', 'true');
+      status.hidden = false;
+      status.textContent = t.sending;
+      try {
+        const response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        status.textContent = response.ok ? t.sent : response.status === 403 ? t.verification : t.failed;
+        if (response.ok) form.reset();
+      } catch {
+        status.textContent = t.failed;
+      } finally {
+        submitting = false;
+        button.disabled = false;
+        form.removeAttribute('aria-busy');
+        const challenge = form.querySelector<HTMLElement>('.cf-turnstile');
+        const turnstile = (window as Window & {
+          turnstile?: { reset(container: HTMLElement): void };
+        }).turnstile;
+        if (challenge && turnstile) turnstile.reset(challenge);
+      }
+    });
+  });
+</script>
 
 <style>
   .contact-form-card {
@@ -198,6 +251,8 @@ const { locale } = Astro.props as {
   .contact-submit:hover { transform: none; }
   .contact-submit:hover :global(svg) { transform: translate(2px, -2px); }
   .contact-submit:active { background: var(--ink-deep); box-shadow: none; }
+  .contact-submit:disabled { opacity: .65; cursor: wait; }
+  .contact-status { margin: 0; color: var(--ink); font-size: .85rem; }
 
   .contact-privacy { margin: -6px 0 0; text-align: center; font-size: .76rem; line-height: 1.5; }
   .contact-privacy a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
